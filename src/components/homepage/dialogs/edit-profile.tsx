@@ -19,8 +19,13 @@ import {
 import React from "react";
 import * as yup from "yup";
 import { useFormik } from "formik";
-import { useEditProfile } from "@/hooks/use-edit-profile";
+import { RootState } from "@/store/store";
 import { Close } from "@mui/icons-material";
+import { useSelector } from "react-redux";
+import { updateProfile } from "@/store/profile-slice";
+import { useAppDispatch } from "@/store/store";
+import { enqueueSnackbar } from "notistack"; // Import notistack for notifications
+
 
 interface FormValues {
   firstName: string;
@@ -105,23 +110,27 @@ const EditProfileDialog = ({
   onClose: () => void;
 }) => {
   const theme = useTheme();
-  const { update } = useEditProfile();
+  const dispatch = useAppDispatch();
+  const { user, loading } = useSelector((state: RootState) => state.profile);
+  const userData = user || {};  // Ensure it’s never undefined
 
-  const userData = JSON.parse(sessionStorage.getItem("loginData") || "{}");
+  // const { update } = useEditProfile();
+
+  // const userData = JSON.parse(sessionStorage.getItem("loginData") || "{}");
   const initialValues: FormValues = {
-    firstName: userData.firstName,
-    lastName: userData.lastName || "",
-    email: userData.email || "",
-    gender: userData.gender || "",
-    companyName: userData.companyName || "",
-    education: userData.education || "",
-    jobTitle: userData.jobTitle || "",
-    aboutMe: userData.aboutMe || "",
-    qualification: userData.qualification || "",
-    experienceYearMin: userData.experienceYearMin || "",
-    experienceYearMax: userData.experienceYearMax || "",
-    educationYearMin: userData.educationYearMin || "",
-    educationYearMax: userData.educationYearMax || "",
+    firstName: user?.firstName || "",
+      lastName: user?.lastName || "",
+      email: user?.email || "",
+      gender: user?.gender || "",
+      companyName: user?.companyName || "",
+      education: user?.education || "",
+      jobTitle: user?.jobTitle || "",
+      aboutMe: user?.aboutMe || "",
+      qualification: user?.qualification || "",
+      experienceYearMin: user?.experienceYearMin || "",
+      experienceYearMax: user?.experienceYearMax || "",
+      educationYearMin: user?.educationYearMin || "",
+      educationYearMax: user?.educationYearMax || "",
   };
 
   const formikEditProfile = useFormik<FormValues>({
@@ -129,9 +138,14 @@ const EditProfileDialog = ({
     initialValues,
     validationSchema,
     onSubmit: async (values) => {
-      onClose();
-      await update(values);
-      console.log(values);
+     
+      try {
+        await dispatch(updateProfile(values)).unwrap();
+        onClose();
+      } catch (error) {
+        console.error("Profile Update Error:", error);
+      }
+     
     },
   });
 

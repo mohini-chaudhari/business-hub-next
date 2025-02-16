@@ -1,6 +1,8 @@
 "use client";
 
-import { useCreateAccount } from "@/hooks/use-create-account";
+// import { useCreateAccount } from "@/hooks/use-create-account";
+import { useAppDispatch } from "@/store/store";
+import { registerUser } from "@/store/auth-slice";
 import { Close } from "@mui/icons-material";
 import {
   Box,
@@ -73,7 +75,7 @@ export function SignUpDialog({
   open,
   onClose,
 }: SignUpProps): React.JSX.Element {
-  const { handleSignup } = useCreateAccount();
+  const dispatch = useAppDispatch();
   const formikSignup = useFormik({
     initialValues: {
       firstName: "",
@@ -85,7 +87,18 @@ export function SignUpDialog({
     validationSchema: validationSchema,
     onSubmit: async (values) => {
       // console.log(values);
-      await handleSignup(values, onClose);
+      // await handleSignup(values, onClose);
+      try {
+        const resultAction = await dispatch(registerUser(values));
+        if (registerUser.fulfilled.match(resultAction)) {
+          onClose(); // Close dialog if signup is successful
+          formikSignup.resetForm();
+        } else {
+          console.error("Signup failed:", resultAction.payload);
+        }
+      } catch (error) {
+        console.error("An error occurred:", error);
+      }
     },
   });
   return (

@@ -1,51 +1,52 @@
 "use client";
-import { Avatar, Box, Button, IconButton, Stack } from "@mui/material";
+import { Avatar, Button, IconButton, Stack } from "@mui/material";
 import * as React from "react";
 import { authButtons } from "./config";
-import { useDispatch } from "react-redux";
 import { SignInDialog } from "../dialogs/sign-in";
 import { SignUpDialog } from "../dialogs/sign-up";
-import { useAppSelector } from "@/store/store";
+import { ProfileDialog } from "../dialogs/profile";
+import EditProfileDialog from "../dialogs/edit-profile";
+import { NotificationDialog } from "../dialogs/notification";
 import { logout } from "@/store/auth-slice";
 import { Notifications } from "@mui/icons-material";
-import { ProfileDialog } from "../dialogs/profile";
-import EditProfileDialog  from "../dialogs/edit-profile";
-import { NotificationDialog } from "../dialogs/notification";
-import { UseNotification } from "@/hooks/use-notification";
-import { openSignInModal,closeSignInModal } from "@/store/modal-slice";
-
+import { useAppDispatch, useAppSelector } from "@/store/store";
+import { fetchNotifications } from "@/store/notification-slice"; // Import fetchNotifications thunk
+import {
+  openSignInModal,
+  closeSignInModal,
+  openSignUpModal,
+  closeSignUpModal,
+  openProfileModal,
+  closeProfileModal,
+  openEditProfileModal,
+  closeEditProfileModal,
+  openNotificationModal,
+  closeNotificationModal
+} from "@/store/modal-slice";
 
 export default function AuthButtons(): React.JSX.Element {
-  const dispatch = useDispatch();
-  let token = useAppSelector((state) => state.auth.token);
-  let userData = JSON.parse(sessionStorage.getItem("loginData")||'{}');
-  const { getNotification, notification } = UseNotification();
-    // const signInModal = useAppSelector((state)=>state.modal.singInModal);
-  
-  const [signInModal, setSignInModal] = React.useState(false);
-  const [signUpModal, setSignUpModal] = React.useState(false);
-  const [profileModal, setProfileModal] = React.useState(false);
-  const [editProfileModal, setEditProfileModal] = React.useState(false);
-  const [notificationModal, setNotificationModal] = React.useState(false);
+  const dispatch = useAppDispatch();
+  const token = useAppSelector((state) => state.auth.token);
+  const userData = JSON.parse(sessionStorage.getItem("loginData") || "{}");
 
-  const handleOpenSignIn = () => setSignInModal(true);
-  const handleCloseSignIn = () => setSignInModal(false);
-  const handleOpenSignUp = () => setSignUpModal(true);
-  const handleCloseSignUp = () => setSignUpModal(false);
-  const handleOpenProfile = () => setProfileModal(true);
-  const handleCloseProfile = () => setProfileModal(false);
-  const handleOpenEditProfile = () => setEditProfileModal(true);
-  const handleCloseEditProfile = () => setEditProfileModal(false);
-  const handleNotificationOpen = () => {
-    setNotificationModal(true);
-    getNotification();
-  };
-  const handleNotificationClose = () => setNotificationModal(false);
+  const signInModal = useAppSelector((state) => state.modal.signInModal);
+  const signUpModal = useAppSelector((state) => state.modal.signUpModal);
+  const profileModal = useAppSelector((state) => state.modal.profileModal);
+  const editProfileModal = useAppSelector((state) => state.modal.editProfileModal);
+  const notificationModal = useAppSelector((state) => state.modal.notificationModal);
+  const notifications = useAppSelector((state) => state.notifications.notifications); // Redux state se notifications lein
+
+  // Load notifications when the component mounts
+  React.useEffect(() => {
+    if (token) {
+      dispatch(fetchNotifications());
+    }
+  }, [dispatch, token]);
 
   return (
     <>
       <Stack
-        direction={"row"}
+        direction="row"
         gap={2}
         sx={{ display: { xs: "none", lg: "flex", md: "flex" } }}
       >
@@ -67,20 +68,24 @@ export default function AuthButtons(): React.JSX.Element {
               variant="contained"
               sx={{
                 color: "primary.contrastText",
-                backgroundColor: "primary.maiin",
+                backgroundColor: "primary.main",
                 textTransform: "none",
                 px: 4,
                 py: 1.5,
                 borderRadius: "10px",
               }}
-              onClick={() => handleOpenProfile()}
+              onClick={() => dispatch(openProfileModal())}
             >
-              {" "}
               {userData.firstName} {userData.lastName}
               <Avatar sx={{ height: 24, width: 24 }} />
             </Button>
-            <IconButton onClick={handleNotificationOpen}>
-              <Notifications sx={{ color: "primary.main" ,height:20,width:20}} />
+            <IconButton
+              onClick={() => {
+                dispatch(openNotificationModal());
+                dispatch(fetchNotifications()); // Fetch notifications on click
+              }}
+            >
+              <Notifications sx={{ color: "primary.main", height: 20, width: 20 }} />
             </IconButton>
           </>
         ) : (
@@ -88,24 +93,21 @@ export default function AuthButtons(): React.JSX.Element {
             <Button
               key={index}
               sx={{
-                color:
-                  authButton.variant === "outlined"
-                    ? "text.primary"
-                    : "primary.contrastText",
+                color: authButton.variant === "outlined"
+                  ? "text.primary"
+                  : "primary.contrastText",
                 textTransform: "none",
-                backgroundColor:
-                  authButton.variant === "contained"
-                    ? "primary.main"
-                    : "transparent",
+                backgroundColor: authButton.variant === "contained"
+                  ? "primary.main"
+                  : "transparent",
                 px: 4,
                 py: 1.5,
                 borderRadius: "10px",
               }}
-              // onClick={()=>authButton.label==='Sign In'?dispatch(openSignInModal()):alert(authButton.label)}
               onClick={() =>
                 authButton.label === "Sign In"
-                  ? handleOpenSignIn()
-                  : handleOpenSignUp()
+                  ? dispatch(openSignInModal())
+                  : dispatch(openSignUpModal())
               }
             >
               {authButton.label}
@@ -113,23 +115,23 @@ export default function AuthButtons(): React.JSX.Element {
           ))
         )}
       </Stack>
-      {/* <SignInDialog open={signInModal} onClose={()=>dispatch(closeSignInModal())}/> */}
+
       {/* All Modals */}
-      <SignInDialog open={signInModal} onClose={handleCloseSignIn} />
-      <SignUpDialog open={signUpModal} onClose={handleCloseSignUp} />
+      <SignInDialog open={signInModal} onClose={() => dispatch(closeSignInModal())} />
+      <SignUpDialog open={signUpModal} onClose={() => dispatch(closeSignUpModal())} />
       <ProfileDialog
         open={profileModal}
-        onClose={handleCloseProfile}
-        openEditProfile={handleOpenEditProfile}
+        onClose={() => dispatch(closeProfileModal())}
+        openEditProfile={() => dispatch(openEditProfileModal())}
       />
       <EditProfileDialog
         open={editProfileModal}
-        onClose={handleCloseEditProfile}
+        onClose={() => dispatch(closeEditProfileModal())}
       />
       <NotificationDialog
         open={notificationModal}
-        onClose={handleNotificationClose}
-        notification={notification}
+        onClose={() => dispatch(closeNotificationModal())}
+        notification={notifications} // Redux state se notifications pass karein
       />
     </>
   );

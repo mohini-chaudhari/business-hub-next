@@ -18,8 +18,10 @@ import {
 import { useFormik } from "formik";
 import React from "react";
 import * as yup from "yup";
-import { useLogin } from "@/hooks/use-login"; // Import the useLogin hook
+// import { useLogin } from "@/hooks/use-login"; // Import the useLogin hook
+import { loginUser } from "@/store/auth-slice";
 import { useDispatch } from "react-redux";
+import { useAppDispatch } from "@/store/store";
 import { Close } from "@mui/icons-material";
 
 interface SignInProps {
@@ -71,8 +73,8 @@ export function SignInDialog({
   open,
   onClose,
 }: SignInProps): React.JSX.Element {
-  const { handleLogin } = useLogin(); // Get login function from useLogin
-  const dispatch = useDispatch();
+  // const { handleLogin } = useLogin(); // Get login function from useLogin
+  const dispatch = useAppDispatch();
 
   const formikSignin = useFormik({
     initialValues: {
@@ -81,8 +83,20 @@ export function SignInDialog({
     },
     validationSchema: validationSchema,
     onSubmit: async (values) => {
-      await handleLogin(values, onClose);
-      formikSignin.resetForm();
+      // await handleLogin(values, onClose);
+      // formikSignin.resetForm();
+      try {
+        const resultAction = await dispatch(loginUser(values));
+        
+        if (loginUser.fulfilled.match(resultAction)) {
+          onClose(); // Close the dialog on successful login
+          formikSignin.resetForm();
+        } else {
+          console.error("Login failed:", resultAction.payload);
+        }
+      } catch (error) {
+        console.error("An error occurred:", error);
+      }
     },
   });
 
